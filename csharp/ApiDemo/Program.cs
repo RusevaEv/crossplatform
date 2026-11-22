@@ -9,7 +9,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Подключаем сервер GraphQL
 builder.Services
     .AddGraphQLServer()
-    .AddQueryType<Query>();
+    .AddQueryType<Query>()
+    .AddMutationType<Mutation>();
 
 var app = builder.Build();
 
@@ -28,6 +29,14 @@ app.MapGet("/api/authors/{id}", async (int id, AppDbContext db) =>
 // 3. Посты конкретного автора (без данных самого автора)
 app.MapGet("/api/authors/{id}/posts", async (int id, AppDbContext db) =>
     await db.Posts.Where(p => p.AuthorId == id).ToListAsync());
+
+// 4. Создание нового поста через REST
+app.MapPost("/api/posts", async (Post post, AppDbContext db) =>
+{
+    db.Posts.Add(post);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/posts/{post.Id}", post);
+});
 
 // --- ЧАСТЬ 2: GRAPHQL ---
 app.MapGraphQL(); // По умолчанию открывается на /graphql
