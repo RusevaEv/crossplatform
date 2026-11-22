@@ -1,0 +1,26 @@
+info:
+  name: Get Authors By Variable
+  type: graphql
+  seq: 2
+
+graphql:
+  method: GET
+  url: http://localhost:8080/graphql
+  body:
+    query: |-
+      query GetAuthor($authorId: Int!) {
+        author(id: $authorId) {
+          name
+          posts {
+            title
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
