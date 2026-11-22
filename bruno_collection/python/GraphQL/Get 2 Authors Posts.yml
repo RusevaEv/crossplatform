@@ -1,0 +1,30 @@
+info:
+  name: Get 2 Authors Posts
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: |-
+      query {
+        firstAuthor: author(id: 1) {
+          name
+          age
+        }
+        secondAuthor: author(id: 2) {
+          name
+          posts {
+            title
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

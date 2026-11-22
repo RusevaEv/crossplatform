@@ -1,0 +1,26 @@
+info:
+  name: Get Author With Posts
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: |-
+      query {
+        author(id: 1) {
+          name
+          posts {
+            title
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

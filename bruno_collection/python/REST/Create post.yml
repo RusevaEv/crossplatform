@@ -1,0 +1,24 @@
+info:
+  name: Create post
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8000/api/posts
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Пост Python",
+        "content": "Создано через обычный REST",
+        "authorId": 2
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
