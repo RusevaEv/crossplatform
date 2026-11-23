@@ -1,0 +1,14 @@
+info:
+  name: Subscription WatchNewPosts
+  type: websocket
+  seq: 7
+
+websocket:
+  url: ws://127.0.0.1:8000/graphql
+  message:
+    - title: message 1
+      selected: false
+      message:
+        type: json
+        data: ""
+  auth: inherit

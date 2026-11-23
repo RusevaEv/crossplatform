@@ -10,6 +10,9 @@ from pydantic import BaseModel
 import strawberry
 from strawberry.fastapi import GraphQLRouter
 
+import asyncio
+from typing import AsyncGenerator
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "db", "database.db")
 
 
@@ -111,36 +114,59 @@ class Query:
             ).fetchone()
             return PostType(**dict(row)) if row else None
 
+post_queue = asyncio.Queue()
+comment_queue = asyncio.Queue()
 
+@strawberry.type
+class Subscription:
+    @strawberry.subscription
+    async def post_created(self) -> AsyncGenerator[PostType, None]:
+        print("=== ПОДПИСКА ЗАПУЩЕНА, ЖДУ ДАННЫЕ ===") # <--- ДОБАВИТЬ
+        while True:
+            new_post = await post_queue.get()
+            print(f"=== ОТПРАВЛЯЮ В WEBSOCKET: {new_post.title} ===") # <--- ДОБАВИТЬ
+            yield new_post
+
+    @strawberry.subscription
+    async def comment_created(self) -> AsyncGenerator[CommentType, None]:
+        while True:
+            new_comment = await comment_queue.get()
+            yield new_comment
 # ---------- Mutation ----------
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    def create_post(self, title: str, content: str, author_id: int) -> PostType:
+    async def create_post(self, title: str, content: str, author_id: int) -> PostType:
         with db() as conn:
             cur = conn.execute(
                 "INSERT INTO posts (title, content, author_id) VALUES (?, ?, ?)",
                 (title, content, author_id),
             )
             conn.commit()
-            return PostType(
+            
+            post = PostType(
                 id=cur.lastrowid, title=title,
                 content=content, author_id=author_id,
             )
+        print(f"=== МУТАЦИЯ: КЛАДУ В ОЧЕРЕДЬ {post.title} ===")
+        await post_queue.put(post)
+        return post
 
     @strawberry.mutation
-    def create_comment(self, post_id: int, author_id: int, text: str) -> CommentType:
+    async def create_comment(self, post_id: int, author_id: int, text: str) -> CommentType:
         with db() as conn:
             cur = conn.execute(
                 "INSERT INTO comments (post_id, author_id, text) VALUES (?, ?, ?)",
                 (post_id, author_id, text),
             )
             conn.commit()
-            return CommentType(
+            comment = CommentType(
                 id=cur.lastrowid, post_id=post_id,
                 author_id=author_id, text=text,
             )
+        await comment_queue.put(comment)
+        return comment
 
     @strawberry.mutation
     def update_post(self, id: int, title: str, content: str) -> Optional[PostType]:
@@ -154,6 +180,7 @@ class Mutation:
                 (title, content, id),
             )
             conn.commit()
+ 
             return PostType(id=id, title=title, content=content, author_id=exists["author_id"])
 
     @strawberry.mutation
@@ -179,9 +206,9 @@ class Mutation:
             return AuthorType(id=id, name=name, age=age)
 
 
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+schema = strawberry.Schema(query=Query, mutation=Mutation, subscription=Subscription)
 app = FastAPI()
-
+app.include_router(GraphQLRouter(schema), prefix="/graphql")
 
 # ---------- REST ----------
 
@@ -319,5 +346,3 @@ def update_author_rest(author_id: int, author: AuthorUpdate):
             "name": author.name, 
             "age": author.age
         }
-
-app.include_router(GraphQLRouter(schema), prefix="/graphql")
