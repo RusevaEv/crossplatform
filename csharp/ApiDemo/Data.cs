@@ -12,8 +12,6 @@ public class Author
 
     [Column("age")]
     public int Age { get; set; }
-
-    // Связь один-ко-многим для GraphQL и EF Core
     public List<Post> Posts { get; set; } = new();
 }
 
