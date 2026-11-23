@@ -1,0 +1,21 @@
+info:
+  name: Update posts 105
+  type: http
+  seq: 7
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/posts/105
+  body:
+    type: json
+    data: |-
+      {"title": "Пост из GraphQL новое название",
+      "content": "Создано через мутацию"}
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

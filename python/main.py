@@ -76,7 +76,7 @@ class AuthorType:
             return [PostType(**dict(r)) for r in rows]
 
 
-# ---------- Query / Mutation ----------
+# ---------- Query ----------
 
 @strawberry.type
 class Query:
@@ -112,6 +112,8 @@ class Query:
             return PostType(**dict(row)) if row else None
 
 
+# ---------- Mutation ----------
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
@@ -140,6 +142,42 @@ class Mutation:
                 author_id=author_id, text=text,
             )
 
+    @strawberry.mutation
+    def update_post(self, id: int, title: str, content: str) -> Optional[PostType]:
+        with db() as conn:
+            exists = conn.execute("SELECT author_id FROM posts WHERE id = ?", (id,)).fetchone()
+            if not exists:
+                return None
+                
+            conn.execute(
+                "UPDATE posts SET title = ?, content = ? WHERE id = ?",
+                (title, content, id),
+            )
+            conn.commit()
+            return PostType(id=id, title=title, content=content, author_id=exists["author_id"])
+
+    @strawberry.mutation
+    def update_comment(self, id: int, text: str) -> Optional[CommentType]:
+        with db() as conn:
+            exists = conn.execute("SELECT post_id, author_id FROM comments WHERE id = ?", (id,)).fetchone()
+            if not exists:
+                return None
+                
+            conn.execute("UPDATE comments SET text = ? WHERE id = ?", (text, id))
+            conn.commit()
+            return CommentType(id=id, post_id=exists["post_id"], author_id=exists["author_id"], text=text)
+
+    @strawberry.mutation
+    def update_author(self, id: int, name: str, age: int) -> Optional[AuthorType]:
+        with db() as conn:
+            exists = conn.execute("SELECT id FROM authors WHERE id = ?", (id,)).fetchone()
+            if not exists:
+                return None
+                
+            conn.execute("UPDATE authors SET name = ?, age = ? WHERE id = ?", (name, age, id))
+            conn.commit()
+            return AuthorType(id=id, name=name, age=age)
+
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 app = FastAPI()
@@ -152,11 +190,21 @@ class PostCreate(BaseModel):
     content: str
     authorId: int
 
-
 class CommentCreate(BaseModel):
     postId: int
     authorId: int
     text: str
+
+class PostUpdate(BaseModel):
+    title: str
+    content: str
+
+class CommentUpdate(BaseModel):
+    text: str
+
+class AuthorUpdate(BaseModel):
+    name: str
+    age: int
 
 
 @app.get("/api/authors")
@@ -222,5 +270,54 @@ def create_comment_rest(comment: CommentCreate):
         return {"id": cur.lastrowid, "postId": comment.postId,
                 "authorId": comment.authorId, "text": comment.text}
 
+@app.put("/api/posts/{post_id}")
+def update_post_rest(post_id: int, post: PostUpdate):
+    with db() as conn:
+        exists = conn.execute("SELECT author_id FROM posts WHERE id = ?", (post_id,)).fetchone()
+        if not exists:
+            raise HTTPException(404, "Post not found")
+            
+        conn.execute(
+            "UPDATE posts SET title = ?, content = ? WHERE id = ?",
+            (post.title, post.content, post_id),
+        )
+        conn.commit()
+        return {
+            "id": post_id, 
+            "title": post.title,
+            "content": post.content, 
+            "authorId": exists["author_id"]
+        }
+
+@app.put("/api/comments/{comment_id}")
+def update_comment_rest(comment_id: int, comment: CommentUpdate):
+    with db() as conn:
+        exists = conn.execute("SELECT post_id, author_id FROM comments WHERE id = ?", (comment_id,)).fetchone()
+        if not exists:
+            raise HTTPException(404, "Comment not found")
+            
+        conn.execute("UPDATE comments SET text = ? WHERE id = ?", (comment.text, comment_id))
+        conn.commit()
+        return {
+            "id": comment_id, 
+            "postId": exists["post_id"],
+            "authorId": exists["author_id"], 
+            "text": comment.text
+        }
+
+@app.put("/api/authors/{author_id}")
+def update_author_rest(author_id: int, author: AuthorUpdate):
+    with db() as conn:
+        exists = conn.execute("SELECT id FROM authors WHERE id = ?", (author_id,)).fetchone()
+        if not exists:
+            raise HTTPException(404, "Author not found")
+            
+        conn.execute("UPDATE authors SET name = ?, age = ? WHERE id = ?", (author.name, author.age, author_id))
+        conn.commit()
+        return {
+            "id": author_id, 
+            "name": author.name, 
+            "age": author.age
+        }
 
 app.include_router(GraphQLRouter(schema), prefix="/graphql")

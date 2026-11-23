@@ -6,6 +6,20 @@ info:
 graphql:
   method: POST
   url: http://localhost:8000/graphql
+  body:
+    query: |-
+      query {
+        authors {
+          name
+          posts {
+            title
+            comments {
+              text
+              author { name }
+            }
+          }
+        }
+      }
   auth: inherit
 
 settings:
