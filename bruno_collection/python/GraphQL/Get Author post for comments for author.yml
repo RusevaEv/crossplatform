@@ -1,0 +1,16 @@
+info:
+  name: "Get Author post for comments for author "
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: http://localhost:8000/graphql
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
