@@ -1,5 +1,5 @@
 info:
-  name: Get Author By Id
+  name: Get Author By Id (First)
   type: http
   seq: 2
 
