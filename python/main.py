@@ -121,10 +121,8 @@ comment_queue = asyncio.Queue()
 class Subscription:
     @strawberry.subscription
     async def post_created(self) -> AsyncGenerator[PostType, None]:
-        print("=== ПОДПИСКА ЗАПУЩЕНА, ЖДУ ДАННЫЕ ===") # <--- ДОБАВИТЬ
         while True:
             new_post = await post_queue.get()
-            print(f"=== ОТПРАВЛЯЮ В WEBSOCKET: {new_post.title} ===") # <--- ДОБАВИТЬ
             yield new_post
 
     @strawberry.subscription
@@ -144,12 +142,10 @@ class Mutation:
                 (title, content, author_id),
             )
             conn.commit()
-            
             post = PostType(
                 id=cur.lastrowid, title=title,
                 content=content, author_id=author_id,
             )
-        print(f"=== МУТАЦИЯ: КЛАДУ В ОЧЕРЕДЬ {post.title} ===")
         await post_queue.put(post)
         return post
 
