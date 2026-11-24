@@ -1,0 +1,48 @@
+info:
+  name: Get Fragments POSTS and Comments
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: |-
+      fragment AuthorFields on AuthorType {
+        id
+        name
+        age
+      }
+
+      fragment CommentFields on CommentType {
+        id
+        postId
+        text
+        author {
+          ...AuthorFields
+        }
+      }
+
+      fragment PostFields on PostType {
+        id
+        title
+        content
+        authorId
+      }
+
+      query GetAllPostsWithComments {
+        posts {
+          ...PostFields
+          comments {
+            ...CommentFields
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
